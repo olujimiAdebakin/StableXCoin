@@ -100,8 +100,4 @@ contract StableXCoin is ERC20Burnable, Ownable {
         _mint(_to, _amount);
         return true;
     }
-
-     function mintSxc() external{
-
-     };
 }

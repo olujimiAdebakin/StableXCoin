@@ -7,7 +7,7 @@ pragma solidity 0.8.24;
  */
 interface ISXCEngine {
     /// @notice Deposit collateral and immediately mint DSC
-    function depositCollateralAndMintDsc() external;
+    // function depositCollateralAndMintDsc() external;
 
     /// @notice Deposit collateral only
     function depositCollateral() external;
@@ -19,7 +19,7 @@ interface ISXCEngine {
     function redeemCollateral() external;
 
     /// @notice Mint DSC from posted collateral
-    function mintDsc() external;
+    function mintSxc() external;
 
     /// @notice Burn DSC to reduce debt position
     function burnDsc() external;
