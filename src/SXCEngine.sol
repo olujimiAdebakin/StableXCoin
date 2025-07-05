@@ -46,13 +46,13 @@
  */
 pragma solidity 0.8.24;
 
-import {ISXCEngine} from "./Interfaces/ISXCEngine.sol";
+// import {ISXCEngine} from "./Interfaces/ISXCEngine.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {StableXCoin} from "./StableXCoin.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 
-contract SXCEngine is ISXCEngine, ReentrancyGuard {
+contract SXCEngine is ReentrancyGuard {
     ///////////////////
     //   Errors   //
     ///////////////////
@@ -81,7 +81,7 @@ contract SXCEngine is ISXCEngine, ReentrancyGuard {
     /// @notice Array of all allowed collateral token addresses
     address[] private s_collateralTokens;
     /// @notice Constant for additional precision used in price feed calculations (1e18)
-    uint256 private constant ADDITIONAL_FEED_PRECISION = 1e18;
+    uint256 private constant ADDITIONAL_FEED_PRECISION = 1e10;
     /// @notice Constant for general precision in calculations (1e18)
     uint256 private constant PRECISION = 1e18;
     /// @notice Reference to the liquidation threshold
@@ -95,8 +95,10 @@ contract SXCEngine is ISXCEngine, ReentrancyGuard {
     //   Events      //
     //////////////////
 
-    event CollateralDeposited(address indexed user, address indexed token, uint256 amount);
-
+    event CollateralDeposited(address indexed user, address indexed token, uint256 indexed amount);
+    event CollateralRedeemed(address indexed user, address indexed token, uint256 indexed amount);
+    /// @notice Emitted when a user burns SXC to reduce debt
+    event SxcBurned(address indexed user, uint256 amount, uint256 newHealthFactor);
     ///////////////////
     //   Modifiers   //
     ///////////////////
@@ -146,7 +148,22 @@ contract SXCEngine is ISXCEngine, ReentrancyGuard {
     // External Functions //
     ////////////////////////
 
-    // function depositCollateralAndMintDsc() external {}
+    /**
+     * @notice Deposits collateral and mints StableXCoin (SXC) in a single transaction
+     * @dev This function first deposits the specified collateral and then mints SXC against it.
+     * It assumes that the caller has approved the collateral transfer beforehand.
+     * @param tokenCollateralAddress The address of the collateral token (e.g., WETH, WBTC)
+     * @param amountCollateral The amount of collateral to deposit (in token's smallest unit)
+     * @param amountSxcToMint The amount of SXC to mint (in 18 decimals)
+     */
+    function depositCollateralAndMintDsc(
+        address tokenCollateralAddress,
+        uint256 amountCollateral,
+        uint256 amountSxcToMint
+    ) external {
+        depositCollateral(tokenCollateralAddress, amountCollateral);
+        mintSxc(amountSxcToMint);
+    }
 
     /**
      * @notice Deposits approved collateral into the system
@@ -156,7 +173,7 @@ contract SXCEngine is ISXCEngine, ReentrancyGuard {
      * @dev Uses modifiers to enforce non-zero amounts, allowed tokens, and non-reentrancy
      */
     function depositCollateral(address tokenCollateralAddress, uint256 amountCollateral)
-        external
+        public
         moreThanZero(amountCollateral)
         isAllowedToken(tokenCollateralAddress)
         nonReentrant
@@ -172,6 +189,51 @@ contract SXCEngine is ISXCEngine, ReentrancyGuard {
         }
     }
 
+    /// @notice Redeem collateral and burn DSC in a single transaction
+    function redeemCollateralForDsc() external {
+
+    }
+
+    ;
+
+    /// @notice Redeem only collateral (likely in excess position)
+    // CEI check effects interaction
+    function redeemCollateral(address tokenCollateralAddress, uint256 amountCollateral) external moreThanZero(amountCollateral)nonReentrant{
+        s_collateralDeposited[msg.sender][tokenCollateralAddress] -= amountCollateral;
+        emit CollateralRedeemed(msg.sender, tokenCollateralAddress, amountCollateral);
+
+        bool success = IERC20(tokenCollateralAddress).transfer(msg.sender, amountCollateral);
+        if (success){
+            revert SXCEngine_TransferFailed();
+        }
+        _revertIfHealthfactorIsBroken(msg.sender);
+    }
+
+     /// @notice Burn DSC to reduce debt position
+    function burnDsc(uint256 amount) external moreThanZero(amount){
+        S_SXCMinted[msg.sender] -= amount;
+        bool success = i_sxc.transferFrom(msg.sender, address(this), amount);
+        if (!success) {
+           revert SXCEngine_TransferFailed();
+        }
+        i_sxc.burn(amount);
+
+          uint256 newHealthFactor = _healthFactor(msg.sender); // private view function
+    emit SxcBurned(msg.sender, amount, newHealthFactor);
+    }
+
+    /// @notice Liquidate an unhealthy position
+    function liquidate() external{
+
+    };
+
+    /// @notice Get the health factor of a user/account
+    function getHealthFactor() external view returns{
+
+    };
+
+    ;
+
     /**
      * @notice Code follows CEI
      * @notice Mints SXC for the caller
@@ -179,7 +241,7 @@ contract SXCEngine is ISXCEngine, ReentrancyGuard {
      * @dev Updates the user's minted SXC balance and checks the health factor
      * @dev Uses modifiers to enforce non-zero amounts and non-reentrancy
      */
-    function mintSxc(uint256 amountSxcToMint) external moreThanZero(amountSxcToMint) nonReentrant {
+    function mintSxc(uint256 amountSxcToMint) public moreThanZero(amountSxcToMint) nonReentrant {
         // Update the user's minted SXC balance
         s_SXCMinted[msg.sender] += amountSxcToMint;
 
@@ -292,6 +354,6 @@ contract SXCEngine is ISXCEngine, ReentrancyGuard {
         // 1 ETH = $1000
         // The returned value from CL will be 1 ETH = 1000 = 10^8
         // Calculate USD value: (price * additional precision * amount) / general precision
-        return (uint256(price) * ADDITIONAL_FEED_PRECISION) * amount / PRECISION; // (1000 * 1e8) * 1000 * 1e18;
+        return ((uint256(price) * ADDITIONAL_FEED_PRECISION) * amount) / PRECISION; // (1000 * 1e8) * 1000 * 1e18;
     }
 }
