@@ -86,6 +86,9 @@ contract SXCEngine is ISXCEngine, ReentrancyGuard {
     uint256 private constant ADDITIONAL_FEED_PRECISION = 1e18;
     /// @notice Constant for general precision in calculations (1e18)
     uint256 private constant PRECISION = 1e18;
+     /// @notice Reference to the liquidation threshold
+    uint256 private constant LIQUIDATION_THRESHOLD = 50; //meaning you have to be 200% overcollateralized
+    uint256 private constant LIQUIDATION_PRECISION = 100;
     /// @notice Reference to the StableXCoin (SXC) contract instance
     StableXCoin private immutable i_sxc;
 
@@ -215,20 +218,32 @@ contract SXCEngine is ISXCEngine, ReentrancyGuard {
         collateralValueInUsd = getAccountCollateralValue(user);
     }
 
+    
 
-    // returns how close to liquidation a user is
-    // If a user goes below 1, then they can get liquidated.
-     /**
-     * @notice Calculates the health factor for a user
-     * @param user The address of the user to query
-     * @return The health factor (indicating how close the user is to liquidation)
-     * @dev A health factor below 1 indicates the user can be liquidated
-     */
-    function _healthFactor(address user)private view returns(uint256){
-        // total SXC minted
-        // total collateral Value
-        (uint256 totalSxcMinted, uint256 collateralValueInUsd) = _getAccountInformation(user);
+/**
+ * @notice Calculates the health factor for a user
+ * @dev A health factor >= 1 means the user's position is safe; < 1 means it can be liquidated.
+ * @param user The address of the user to check
+ * @return The health factor, scaled by 1e18 (WAD-style)
+ */
+function _healthFactor(address user) private view returns (uint256) {
+    // 1. Get how much SXC the user has minted and how much their collateral is worth in USD
+    (uint256 totalSxcMinted, uint256 collateralValueInUsd) = _getAccountInformation(user);
+
+    // Edge case: if user hasn't minted anything, their position is perfectly safe
+    if (totalSxcMinted == 0) {
+        return type(uint256).max; // return the highest possible value (fully safe)
     }
+
+    // 2. Adjust collateral value by the liquidation threshold (e.g., 50%)
+    //    This gives us the "effective collateral" after risk adjustment
+    uint256 collateralAdjustedForThreshold = (collateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
+
+    // 3. Health Factor = (adjusted collateral) / (debt)
+    //    If result < 1 → liquidation is possible
+    return (collateralAdjustedForThreshold * 1e18) / totalSxcMinted;
+}
+
 
 
      /**
