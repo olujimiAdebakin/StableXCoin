@@ -57,13 +57,26 @@ contract SXCEngineTest is Test {
         vm.deal(USER, 10 ether);
     }
 
+    /////////////////////////
+    /// Constructor Test ////
+    ////////////////////////
+
+    
+
+    /// @notice Logs debugging information for price and amount calculations in tests.
+    /// @dev Used in Foundry tests to output price, ETH amount, and USD value comparisons to the console.
+    /// @param label A string label to identify the context of the logged data.
+    /// @param price The price of the asset (in signed integer form, typically from an oracle).
+    /// @param ethAmount The amount of ETH involved in the calculation (in wei).
+    /// @param expectedUsd The expected USD value of the transaction or calculation.
+    /// @param actualUsd The actual USD value calculated, for comparison with the expected value.
     function logPriceDebugInfo(
         string memory label,
         int256 price,
         uint256 ethAmount,
         uint256 expectedUsd,
         uint256 actualUsd
-    ) internal {
+    ) internal pure {
         console.log("%s", label);
         console.log("Price: %s", uint256(price));
         console.log("ETH Amount: %s", ethAmount);
@@ -76,7 +89,7 @@ contract SXCEngineTest is Test {
     /////////////////////////////////
 
     /// @notice Tests that getUsdValue returns the correct USD value for WETH using HelperConfig
-    function testGetUsdValue() public {
+    function testGetUsdValue() public view {
         uint256 ethAmount = 15e18; // 15 ETH
         uint256 expectedUsdValue = 30000e18; // 15 ETH * $2000 = $30,000 (18 decimals)
 
