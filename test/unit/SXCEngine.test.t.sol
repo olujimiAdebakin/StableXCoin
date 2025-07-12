@@ -60,8 +60,17 @@ contract SXCEngineTest is Test {
     /////////////////////////
     /// Constructor Test ////
     ////////////////////////
+    address[] public tokenAddresses;
+    address[] public priceFeedAddresses;
 
-    
+    function testRevertsIfTokenDoesntMatchPriceFeeds() public {
+        tokenAddress.push(weth);
+        priceFeedAddresses.push(ethUsdPriceFeed);
+         priceFeedAddresses.push(btcUsdPriceFeed);
+
+         vm.expectRevertSXCEngine_TokenAddressesAndPriceFeedAddressesMustBeSameLength.selector();
+         new SXCEngine(tokenAddresses, priceFeedAddresses, address(sxc));
+    }
 
     /// @notice Logs debugging information for price and amount calculations in tests.
     /// @dev Used in Foundry tests to output price, ETH amount, and USD value comparisons to the console.

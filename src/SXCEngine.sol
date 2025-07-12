@@ -74,6 +74,8 @@ contract SXCEngine is ReentrancyGuard {
     error SXCEngine_InvalidPrice();
     error SXCEngine_StalePrice();
     error SXCEngine_InsufficientAllowance();
+    /// @notice Reverts if arithmetic overflow occurs during USD value calculation
+    error SXCEngine_ArithmeticOverflow();
 
     ////////////////////////
     //   State Variables //
@@ -149,7 +151,7 @@ contract SXCEngine is ReentrancyGuard {
     constructor(address[] memory tokenAddresses, address[] memory priceFeedAddresses, address sxcAddress) {
         // Check that token and price feed arrays have the same length
         if (tokenAddresses.length != priceFeedAddresses.length) {
-            revert SXCEngine_TokenAddressesAndPriceFeedAddressesMustBeSameLenght();
+            revert SXCEngine_TokenAddressesAndPriceFeedAddressesMustBeSameLength();
         }
 
         // Map each token to its price feed and store token addresses
@@ -470,6 +472,10 @@ contract SXCEngine is ReentrancyGuard {
         }
         uint8 feedDecimals = priceFeed.decimals();
         uint256 feedPrecision = 10 ** uint256(feedDecimals);
+        // Check for potential overflow
+        if (amount > 0 && uint256(price) > type(uint256).max / (feedPrecision * amount)) {
+            revert SXCEngine_ArithmeticOverflow();
+        }
         return ((uint256(price) * feedPrecision) * amount) / PRECISION;
     }
 
@@ -489,6 +495,10 @@ contract SXCEngine is ReentrancyGuard {
         }
         uint8 feedDecimals = priceFeed.decimals();
         uint256 feedPrecision = 10 ** uint256(feedDecimals);
+        // Check for potential overflow
+        if (usdAmountInWei > 0 && usdAmountInWei > type(uint256).max / PRECISION) {
+            revert SXCEngine_ArithmeticOverflow();
+        }
         return (usdAmountInWei * PRECISION) / (uint256(price) * feedPrecision);
     }
 
