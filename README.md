@@ -1,160 +1,135 @@
-**StableX: A Decentralized Stablecoin Protocol 🪙**
+# **StableXCoin: Decentralized Stablecoin Protocol** 💰
 
-StableX is a robust, decentralized, and overcollateralized stablecoin system built on the Ethereum blockchain. It's designed to maintain a soft peg to the U.S. Dollar (USD), offering a reliable and censorship-resistant digital currency. Think of it as a streamlined, self-contained version of systems like MakerDAO, but with a focus on simplicity: no complex governance tokens or variable stability fees.
+Dive into **StableXCoin**, a robust decentralized stablecoin protocol engineered for the Ethereum Virtual Machine. This project introduces a stable, USD-pegged cryptocurrency backed by **exogenous collateral** like WETH and WBTC. Inspired by the principles of overcollateralization and algorithmic stability, StableXCoin provides a secure and efficient way to interact with stable value within the decentralized finance landscape. 🛡️ It features a core engine for managing collateral, minting, burning, and a permissionless liquidation mechanism, all secured by Chainlink Price Feeds.
 
-This protocol ensures that at all times, the total USD value of all deposited collateral (like WETH and WBTC) significantly exceeds the total supply of StableXCoin (SXC) in circulation. This overcollateralization is key to maintaining the system's stability and security.
+## 🚀 Installation
 
-## Installation
+To get started with StableXCoin, you'll need the Foundry development toolchain installed. If you don't have it, follow the instructions on the official [Foundry Book](https://book.getfoundry.sh/getting-started/installation).
 
-Getting StableX up and running on your local machine is straightforward. Here’s how you can do it:
+Once Foundry is set up, follow these steps:
 
-### Prerequisites
+*   **Clone the Repository**:
+    ```bash
+    git clone https://github.com/olujimiAdebakin/StableXCoin.git
+    cd StableXCoin
+    ```
 
-Before you begin, ensure you have [Foundry](https://getfoundry.sh/) installed. Foundry is a blazing-fast, portable, and modular toolkit for Ethereum application development written in Rust.
+*   **Install Dependencies**:
+    The project uses Git submodules for external libraries like OpenZeppelin and Chainlink.
+    ```bash
+    forge install
+    ```
 
-```bash
-curl -L https://foundry.paradigm.xyz | bash
-foundryup
-```
+*   **Build the Project**:
+    Compile the smart contracts.
+    ```bash
+    forge build
+    ```
 
-### Clone the Repository
+*   **Run Tests (Optional but Recommended)**:
+    Ensure everything is working as expected by running the included tests.
+    ```bash
+    forge test
+    ```
 
-Start by cloning the StableX repository to your local machine:
+## 🛠️ Usage
 
-```bash
-git clone https://github.com/olujimiAdebakin/StableXCoin.git
-cd StableXCoin
-```
-
-### Install Dependencies
-
-StableX leverages several external libraries for secure and efficient smart contract operations. Use Forge to install them:
-
-```bash
-forge update
-```
-
-### Compile the Contracts
-
-Once dependencies are in place, compile the Solidity contracts:
-
-```bash
-forge build
-```
-
-And just like that, you're ready to dive into the StableX protocol!
-
-## Usage
-
-StableX is a powerful financial primitive, and here’s how you can interact with its core functionalities:
-
-### Running Tests
-
-To ensure the integrity and reliability of the StableX protocol, comprehensive unit and integration tests are included. You can run them using Forge:
-
-```bash
-forge test
-```
-
-This command will execute all test cases defined in the `test/` directory, providing confidence in the contract's logic and behavior.
+The StableXCoin protocol consists of two primary contracts: `StableXCoin.sol` (the ERC20 stablecoin itself) and `SXCEngine.sol` (the core logic for collateral management, minting, burning, and liquidation). The deployment process is handled by a Foundry script.
 
 ### Deploying to a Local Network (Anvil)
 
-For local development and testing, you can deploy the contracts to an Anvil instance (Foundry's local blockchain):
+For local development and testing, you can deploy to a local Anvil instance.
 
-1.  **Start Anvil**: Open a new terminal and run:
+1.  **Start an Anvil Node**:
     ```bash
     anvil
     ```
-    This will start a local blockchain and display its RPC URL and default private keys.
-
-2.  **Deploy Contracts**: In your project directory, execute the deployment script. The `HelperConfig.s.sol` script intelligently uses mock Chainlink feeds and ERC20 tokens for local networks, or real Sepolia addresses when deployed there.
-
+2.  **Deploy Contracts**:
+    In a new terminal, with Anvil running, use the deployment script. This will automatically create mock price feeds and WETH/WBTC tokens for you.
     ```bash
-    forge script script/DeploySXCEngine.s.sol:DeploySXCEngine --rpc-url http://127.0.0.1:8545 --private-key 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d --broadcast
+    forge script script/DeploySXCEngine.s.sol --broadcast --fork-url http://localhost:8545
     ```
-    *(Note: The private key shown here is Anvil's default deployer key. For real networks, you would use an environment variable.)*
+    This command will output the addresses of the deployed `StableXCoin` and `SXCEngine` contracts.
 
-### Interacting with Deployed Contracts
+### Deploying to Sepolia Testnet
 
-Once deployed, you can interact with the `SXCEngine` and `StableXCoin` contracts using `cast` (Foundry's CLI tool) or any web3 library (e.g., Ethers.js, Web3.js).
+To deploy to Sepolia (or any other public testnet/mainnet), you'll need an RPC URL and a private key with funds.
 
-For example, to check a user's health factor after deployment:
+1.  **Set Environment Variables**:
+    Ensure your private key and Etherscan API key (for verification) are set as environment variables.
+    ```bash
+    export PRIVATE_KEY="0x..." # Your deployer private key
+    export ETHERSCAN_API_KEY="..." # Your Etherscan API key for verification
+    ```
+2.  **Deploy Contracts**:
+    ```bash
+    forge script script/DeploySXCEngine.s.sol --rpc-url <YOUR_SEPOLIA_RPC_URL> --private-key $PRIVATE_KEY --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
+    ```
+    Replace `<YOUR_SEPOLIA_RPC_URL>` with your actual Sepolia RPC endpoint (e.g., from Alchemy or Infura).
 
-```bash
-# First, get the deployed SXCEngine address from your deployment output
-# Let's assume SXCE_ENGINE_ADDRESS is the address you obtained
-# And USER_ADDRESS is the address you want to query
+### Interacting with the Contracts
 
-cast call $SXCE_ENGINE_ADDRESS "getHealthFactor()(uint256)" --from $USER_ADDRESS --rpc-url http://127.0.0.1:8545
-```
+Once deployed, you can interact with the `SXCEngine` contract to:
 
-This allows for seamless testing of all deposit, mint, redeem, burn, and liquidation functionalities.
+*   **Deposit Collateral**: Deposit WETH or WBTC into the system.
+*   **Mint SXC**: Generate StableXCoin by overcollateralizing your deposited assets.
+*   **Burn SXC**: Repay your debt and reduce your minted SXC.
+*   **Redeem Collateral**: Withdraw your collateral (after burning sufficient SXC).
+*   **Liquidate Positions**: Anyone can liquidate undercollateralized positions to maintain system health.
 
-## Features
+You can use `cast` (Foundry's CLI tool), a dApp frontend, or a script to interact with the deployed contracts.
 
-StableX offers a secure and efficient mechanism for decentralized stablecoin operations:
+## ✨ Features
 
-*   🌐 **Overcollateralized Debt Positions**: Ensures that the value of collateral always surpasses the minted SXC, providing a robust peg.
-*   🔗 **Dynamic Price Feeds**: Integrates Chainlink's reliable oracle networks to fetch real-time, decentralized price data for collateral assets (WETH, WBTC).
-*   🛡️ **Liquidation Mechanism**: Features an automated liquidation process for undercollateralized positions, maintaining the system's health.
-*   💰 **ERC-20 Compliant Stablecoin**: The StableXCoin (SXC) token adheres to the ERC-20 standard, ensuring broad compatibility across the Ethereum ecosystem.
-*   ⚙️ **Simplified Design**: By excluding governance tokens and complex fee structures, StableX focuses on core stablecoin functionality.
-*   🔄 **Automated Minting & Burning**: The SXCEngine programmatically handles the issuance and destruction of SXC based on user deposits and debt repayment.
+*   **Overcollateralized Stablecoin**: Backed by high-quality exogenous collateral assets (WETH, WBTC).
+*   **Algorithmic Minting & Burning**: StableXCoin (SXC) can be minted against deposited collateral and burned to repay debt.
+*   **Dynamic Health Factor Monitoring**: A robust system to calculate and monitor the collateralization health of user positions, ensuring system stability.
+*   **Permissionless Liquidation Mechanism**: Allows anyone to liquidate undercollateralized positions, maintaining the protocol's solvency and offering a bounty to liquidators.
+*   **Chainlink Price Feeds Integration**: Utilizes Chainlink's decentralized oracle networks for reliable and real-time asset pricing (ETH/USD, BTC/USD).
+*   **Reentrancy Protection**: Employs OpenZeppelin's `ReentrancyGuard` to prevent common reentrancy attacks on critical functions.
+*   **Modular Design**: Clear separation between the ERC20 token and the core engine logic for better maintainability and security.
 
-## Technologies Used
+## 💻 Technologies Used
 
-| Technology     | Description                                                                                             |
-| :------------- | :------------------------------------------------------------------------------------------------------ |
-| Solidity       | The primary programming language for writing smart contracts on the Ethereum blockchain.                |
-| Foundry        | A modern, fast, and feature-rich toolkit for Ethereum development, including `forge` and `cast`.        |
-| Chainlink      | Provides decentralized oracle networks, essential for fetching reliable real-world asset prices.        |
-| OpenZeppelin   | Offers battle-tested, secure, and community-audited smart contract libraries, enhancing security.       |
+| Category     | Technology          | Link                                                                      |
+| :----------- | :------------------ | :------------------------------------------------------------------------ |
+| **Language** | Solidity (0.8.24)   | [Solidity Docs](https://docs.soliditylang.org/)                           |
+| **Framework**| Foundry             | [Foundry Book](https://book.getfoundry.sh/)                               |
+| **Libraries**| OpenZeppelin        | [OpenZeppelin Contracts](https://docs.openzeppelin.com/contracts/4.x/)    |
+| **Oracles**  | Chainlink           | [Chainlink Docs](https://docs.chain.link/data-feeds/)                     |
 
-## Contributing
+## 👋 Contributing
 
-We welcome contributions to the StableX project! If you're interested in improving this protocol, here's how you can get started:
+Contributions are warmly welcomed! If you're interested in improving StableXCoin, please consider:
 
-🌱 **Fork the Repository**: Begin by forking the StableXCoin repository to your GitHub account.
+*   🐛 **Reporting Bugs**: Found an issue? Open a detailed issue on GitHub.
+*   💡 **Suggesting Features**: Have an idea for a new feature or improvement? Let us know!
+*   👨‍💻 **Submitting Pull Requests**:
+    *   Fork the repository.
+    *   Create a new branch for your feature or bug fix.
+    *   Make your changes and write clear, concise commit messages.
+    *   Ensure your code passes all tests (`forge test`) and builds successfully (`forge build`).
+    *   Submit a pull request with a detailed description of your changes.
 
-👯 **Clone Your Fork**: Clone your forked repository to your local machine.
+## 📄 License
 
-🚀 **Create a New Branch**: Always create a new branch for your features or bug fixes. Use descriptive names (e.g., `feature/add-new-collateral`, `fix/health-factor-bug`).
+This project is licensed under the **MIT License**. For more details, see the `LICENSE` file in the repository (if present) or refer to the SPDX-License-Identifier in the source code.
 
-💡 **Implement Your Changes**: Write clean, well-documented code that adheres to the existing style.
+## 👤 Author Info
 
-🧪 **Write Tests**: Ensure your changes are covered by comprehensive unit and integration tests. All new features or bug fixes should come with corresponding tests.
-
-✅ **Run Tests**: Before submitting, run all tests (`forge test`) to make sure everything passes.
-
-📝 **Commit Your Changes**: Write clear and concise commit messages.
-
-⬆️ **Push to Your Fork**: Push your new branch to your forked repository.
-
-🔄 **Open a Pull Request**: Submit a pull request to the `main` branch of the original repository. Please describe your changes thoroughly and reference any relevant issues.
-
-We appreciate your efforts in making StableX even better!
-
-## License
-
-This project is licensed under the MIT License. For more details, please refer to the SPDX license identifier at the top of the source files.
-
-## Author Info
-
-**Adebakin Olujimi**
-
-Connect with me and see more of my work:
-
-*   🐦 [Twitter](https://twitter.com/your_twitter_handle)
-*   🐙 [GitHub](https://github.com/olujimiAdebakin)
-*   💼 [LinkedIn](https://www.linkedin.com/in/your_linkedin_profile)
+*   **Adebakin Olujimi**
+    *   GitHub: [@olujimiAdebakin](https://github.com/olujimiAdebakin)
+    *   LinkedIn: [Your LinkedIn Profile](https://linkedin.com/in/your_profile)
+    *   Twitter: [@your_twitter_handle](https://twitter.com/your_twitter_handle)
 
 ---
 
-[![Solidity](https://img.shields.io/badge/Solidity-0.8.24-lightgrey)](https://soliditylang.org/)
-[![Foundry](https://img.shields.io/badge/Powered%20by-Foundry-blue)](https://getfoundry.sh/)
-[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen)](https://getfoundry.sh/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Last Commit](https://img.shields.io/github/last-commit/olujimiAdebakin/StableXCoin?color=yellow)](https://github.com/olujimiAdebakin/StableXCoin)
+[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen)](https://github.com/olujimiAdebakin/StableXCoin/actions)
+[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen)](https://github.com/olujimiAdebakin/StableXCoin/actions)
+![Solidity](https://img.shields.io/badge/Solidity-0.8.24-lightgrey?logo=solidity)
+![Foundry](https://img.shields.io/badge/Made%20with-Foundry-blue?logo=foundry)
+[![License](https://img.shields.io/badge/License-MIT-green)](https://opensource.org/licenses/MIT)
+
+---
 
 [![Readme was generated by Dokugen](https://img.shields.io/badge/Readme%20was%20generated%20by-Dokugen-brightgreen)](https://www.npmjs.com/package/dokugen)
