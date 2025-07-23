@@ -6,6 +6,20 @@ import {ERC20Mock} from "../test/mocks/ERC20Mock.sol";
 import {Script} from "forge-std/Script.sol";
 
 contract HelperConfig is Script {
+    /// @notice Active network configuration
+    NetworkConfig public activeNetworkConfig;
+
+    /// @notice Default private key for Anvil deployment
+    uint256 public constant DEFAULT_ANVIL_PRIVATE_KEY =
+        0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d;
+
+    /// @notice Number of decimals for mock price feeds
+    uint8 public constant DECIMALS = 8;
+    /// @notice Initial ETH/USD price for mock feeds (2000 USD)
+    int256 public constant ETH_USD_PRICE = 2000e8;
+    /// @notice Initial BTC/USD price for mock feeds (1000 USD)
+    int256 public constant BTC_USD_PRICE = 1000e8;
+
     /// @notice Struct to hold network configuration data
     struct NetworkConfig {
         address wethUsdPriceFeed;
@@ -15,21 +29,8 @@ contract HelperConfig is Script {
         uint256 deployerKey;
     }
 
-    /// @notice Active network configuration
-    NetworkConfig public activeNetworkConfig;
-
-    /// @notice Number of decimals for mock price feeds
-    uint8 public constant DECIMALS = 8;
-    /// @notice Initial ETH/USD price for mock feeds (2000 USD)
-    int256 public constant ETH_USD_PRICE = 2000e8;
-    /// @notice Initial BTC/USD price for mock feeds (1000 USD)
-    int256 public constant BTC_USD_PRICE = 1000e8;
-
-    /// @notice Default private key for Anvil deployment
-    uint256 public constant DEFAULT_ANVIL_PRIVATE_KEY =
-        0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d;
-
     /// @notice Constructor that sets the network configuration based on chain ID
+
     constructor() {
         if (block.chainid == 11155111) {
             activeNetworkConfig = getSepoliaEthConfig();
@@ -37,6 +38,16 @@ contract HelperConfig is Script {
             activeNetworkConfig = getOrCreateAnvilEthConfig();
         }
     }
+
+    //  function getMainnetConfig() public pure returns (NetworkConfig memory) {
+    //     return NetworkConfig({
+    //         ethUsdPriceFeed: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419,
+    //         btcUsdPriceFeed: 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c,
+    //         weth: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2,
+    //         wbtc: 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599,
+    //         deployerKey: 0
+    //     });
+    // }
 
     /// @notice Retrieves Sepolia testnet configuration
     /// @return sepoliaNetworkConfig The network configuration with corrected token and price feed addresses
@@ -74,17 +85,20 @@ contract HelperConfig is Script {
             wbtc: address(wbtcMock),
             deployerKey: DEFAULT_ANVIL_PRIVATE_KEY
         });
+
+        activeNetworkConfig = anvilNetworkConfig;
+        return activeNetworkConfig;
     }
 
-    /// @notice Retrieves Mainnet configuration (optional, for future use)
-    /// @return mainnetNetworkConfig The network configuration for Mainnet
-    function getMainnetEthConfig() public pure returns (NetworkConfig memory mainnetNetworkConfig) {
-        mainnetNetworkConfig = NetworkConfig({
-            wethUsdPriceFeed: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, // ETH/USD
-            wbtcUsdPriceFeed: 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c, // BTC/USD
-            weth: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, // WETH
-            wbtc: 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599, // WBTC
-            deployerKey: 0 // Wil be Set via environment variable for Mainnet
-        });
-    }
+    // /// @notice Retrieves Mainnet configuration (optional, for future use)
+    // /// @return mainnetNetworkConfig The network configuration for Mainnet
+    // function getMainnetEthConfig() public pure returns (NetworkConfig memory mainnetNetworkConfig) {
+    //     mainnetNetworkConfig = NetworkConfig({
+    //         wethUsdPriceFeed: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419, // ETH/USD
+    //         wbtcUsdPriceFeed: 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c, // BTC/USD
+    //         weth: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, // WETH
+    //         wbtc: 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599, // WBTC
+    //         deployerKey: 0 // Wil be Set via environment variable for Mainnet
+    //     });
+    // }
 }
