@@ -22,8 +22,8 @@ contract SXCEngineTest is Test {
     address public USER = makeAddr("user"); // Test user address
     address public LIQUIDATOR = makeAddr("liquidator"); // Test liquidator address
     uint8 public constant DECIMALS = 8; // Decimals for price feeds
-    int256 public constant ETH_USD_PRICE = 2000 * 10**8; // Initial ETH price: $2000 (with 8 decimals)
-    int256 public constant BTC_USD_PRICE = 60000 * 10**8; // Initial BTC price: $60000 (with 8 decimals)
+    int256 public constant ETH_USD_PRICE = 2000 * 10 ** 8; // Initial ETH price: $2000 (with 8 decimals)
+    int256 public constant BTC_USD_PRICE = 60000 * 10 ** 8; // Initial BTC price: $60000 (with 8 decimals)
     uint256 public constant AMOUNT_COLLATERAL = 10 ether; // Default collateral amount for tests (10 ETH/WBTC)
     uint256 public constant STARTING_ERC20_BALANCE = 1000 ether; // Initial balance for mock ERC20s
     uint256 public constant STARTING_BALANCE = 1000 ether; // Redundant, but kept for consistency
@@ -517,7 +517,8 @@ contract SXCEngineTest is Test {
         depositCollateral(USER, weth, AMOUNT_COLLATERAL);
         depositCollateral(USER, wbtc, AMOUNT_COLLATERAL);
         uint256 totalCollateralValue = sxcEngine.getAccountCollateralValue(USER);
-        uint256 expectedValue = sxcEngine.getUsdValue(weth, AMOUNT_COLLATERAL) + sxcEngine.getUsdValue(wbtc, AMOUNT_COLLATERAL);
+        uint256 expectedValue =
+            sxcEngine.getUsdValue(weth, AMOUNT_COLLATERAL) + sxcEngine.getUsdValue(wbtc, AMOUNT_COLLATERAL);
         assertEq(totalCollateralValue, expectedValue, "Total collateral value incorrect");
     }
 
@@ -533,7 +534,8 @@ contract SXCEngineTest is Test {
         // Expected HF = (20000e18 * 50 / 100 * 1e18) / 1000e18
         //             = (10000e18 * 1e18) / 1000e18
         //             = 10e18
-        uint256 expectedHealthFactor = ((sxcEngine.getUsdValue(weth, AMOUNT_COLLATERAL) * 50) / 100 * 1e18) / SXC_TO_MINT;
+        uint256 expectedHealthFactor =
+            ((sxcEngine.getUsdValue(weth, AMOUNT_COLLATERAL) * 50) / 100 * 1e18) / SXC_TO_MINT;
         assertEq(healthFactor, expectedHealthFactor, "Health factor incorrect");
     }
 

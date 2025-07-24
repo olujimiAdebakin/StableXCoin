@@ -57,7 +57,6 @@ contract SXCEngine is ReentrancyGuard {
     /// @notice Reverts if the collateral amount available for liquidation is insufficient.
     error SXCEngine_NotEnoughCollateralForLiquidation();
 
-
     ///////////////////////////
     // Type Declarations //
     ///////////////////////////
@@ -219,11 +218,11 @@ contract SXCEngine is ReentrancyGuard {
      * @param user The address of the user whose position is being liquidated.
      * @param debtToCover The amount of SXC debt the liquidator wishes to cover.
      */
-    function liquidate(address collateral, address user, uint256 debtToCover) // Changed from uint252 to uint256
-        external
-        moreThanZero(debtToCover)
-        nonReentrant
-    {
+    function liquidate(
+        address collateral,
+        address user,
+        uint256 debtToCover // Changed from uint252 to uint256
+    ) external moreThanZero(debtToCover) nonReentrant {
         // 1. Initial health factor check: Position must be unhealthy to be liquidated.
         uint256 startingUserHealthFactor = _healthFactor(user);
         if (startingUserHealthFactor >= MIN_HEALTH_FACTOR) {
@@ -327,7 +326,7 @@ contract SXCEngine is ReentrancyGuard {
         _burnSxc(amount, msg.sender, msg.sender);
         // Check health factor after burning SXC. It should improve or stay healthy.
         _revertIfHealthFactorIsBroken(msg.sender); // This check ensures the user doesn't burn too much collateral
-                                                   // if it would make their *remaining* position unhealthy.
+            // if it would make their *remaining* position unhealthy.
         emit SxcBurned(msg.sender, amount);
     }
 
@@ -459,12 +458,17 @@ contract SXCEngine is ReentrancyGuard {
      * @param collateralValueInUsd Total USD value of the user's collateral.
      * @return The calculated health factor, scaled by `PRECISION` (1e18). Returns `type(uint256).max` if `totalSxcMinted` is zero.
      */
-    function _calculateHealthFactor(uint256 totalSxcMinted, uint256 collateralValueInUsd) private pure returns (uint256) {
+    function _calculateHealthFactor(uint256 totalSxcMinted, uint256 collateralValueInUsd)
+        private
+        pure
+        returns (uint256)
+    {
         if (totalSxcMinted == 0) return type(uint256).max; // If no debt, health factor is considered infinite.
 
         // Calculate the thresholded collateral value: collateralValueInUsd * LIQUIDATION_THRESHOLD / LIQUIDATION_PRECISION
         // (e.g., collateral * 0.5)
-        uint256 collateralAdjustedForThreshold = (collateralValueInUsd.mul(LIQUIDATION_THRESHOLD)).div(LIQUIDATION_PRECISION);
+        uint256 collateralAdjustedForThreshold =
+            (collateralValueInUsd.mul(LIQUIDATION_THRESHOLD)).div(LIQUIDATION_PRECISION);
 
         // Health factor = (adjusted collateral * PRECISION) / totalSxcMinted
         // This scales the health factor to 1e18 for consistent calculations.
