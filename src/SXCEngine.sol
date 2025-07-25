@@ -4,7 +4,8 @@ pragma solidity 0.8.24;
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {StableXCoin} from "./StableXCoin.sol";
-import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+// import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+import {OracleLib} from "./libraries/OracleLib.sol"; // Assuming OracleLib is correctly implemented and available;
 
 import "../utils/SafeMath.sol"; // Assuming SafeMath is correctly implemented and available
 
@@ -62,6 +63,7 @@ contract SXCEngine is ReentrancyGuard {
     // Type Declarations //
     ///////////////////////////
     using SafeMath for uint256; // Assuming SafeMath provides functions like `mul`, `div`, `add`, `sub` with overflow checks.
+    using OracleLib for AggregatorV3Interface; // Assuming OracleLib provides the `stalePriceCheckLatestRoundData` function.
 
     ///////////////////////
     // State Variables //
@@ -511,7 +513,7 @@ contract SXCEngine is ReentrancyGuard {
      */
     function getUsdValue(address token, uint256 amount) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
-        (, int256 price,, uint256 updatedAt,) = priceFeed.latestRoundData();
+        (, int256 price,, uint256 updatedAt,) = priceFeed.stalePriceCheckLatestRoundData();
         _validatePriceData(price, updatedAt); // Validate price and staleness
         uint256 priceUint = uint256(price);
 
@@ -534,7 +536,7 @@ contract SXCEngine is ReentrancyGuard {
      */
     function getTokenAmountFromUsd(uint256 usdAmountInWei, address token) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
-        (, int256 price,, uint256 updatedAt,) = priceFeed.latestRoundData();
+        (, int256 price,, uint256 updatedAt,) = priceFeed.stalePriceCheckLatestRoundData();
         _validatePriceData(price, updatedAt); // Validate price and staleness
         uint256 priceUint = uint256(price);
 
