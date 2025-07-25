@@ -53,7 +53,7 @@
 // }
 
 
-// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.24;
 
 /// @title Handler Contract for SXCEngine Invariant Testing
@@ -65,6 +65,7 @@ import {Test} from "forge-std/Test.sol";
 import {SXCEngine} from "../../src/SXCEngine.sol";
 import {StableXCoin} from "../../src/StableXCoin.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
+import {MockV3Aggregator} from "../mocks/MockV3Aggregator.sol";
 
 contract Handler is Test {
     // ========================
@@ -77,7 +78,13 @@ contract Handler is Test {
     ERC20Mock public weth;
     ERC20Mock public wbtc;
 
+    uint256 public timeMintIsCalled;
+
     uint256 MAX_DEPOSIT_SIZE = type(uint96).max;
+
+    address[] public usersWithCollateralDeposited;
+
+    MockV3Aggregator public ethUsdPriceFeed;
 
     /// @notice Initializes the handler with the deployed engine and stablecoin
     /// @param _engine The SXCEngine contract to be tested
@@ -90,6 +97,9 @@ contract Handler is Test {
         address[] memory collateralTokens = engine.getCollateralTokens();
         weth = ERC20Mock(collateralTokens[0]);
         wbtc = ERC20Mock(collateralTokens[1]);
+
+        // Price Feed
+       ethUsdPriceFeed = engine.getCollateralTokenPriceFeed(address(weth)).setLatestAnswer(2000e8); // $2000 WETH
     }
 
     // ========================
@@ -108,6 +118,7 @@ contract Handler is Test {
     collateral.approve(address(engine), clampedAmount);
     engine.depositCollateral(address(collateral), clampedAmount);
     vm.stopPrank();
+    usersWithCollateralDeposited.push(msg.sender);
 }
 
 
@@ -117,12 +128,19 @@ contract Handler is Test {
 ///      If the user has already minted the maximum or has insufficient collateral, the function exits safely.
 /// @param amount The amount of StableXCoin (SXC) the user attempts to mint. This is bounded internally.
 /// @custom:invariant The function avoids minting if it would violate the collateralization ratio.
-function minSxc(uint256 amount) public {
+function minSxc(uint256 amount, uint256 addressSeed) public {
+
+      if (usersWithCollateralDeposited.length == 0){
+            return;
+      }
+      
+      address sender = usersWithCollateralDeposited[addressSeed % usersWithCollateralDeposited.length];
+
     // Clamp the initial amount to prevent unrealistic fuzzing input
-    amount = bound(amount, 1, MAX_DEPOSIT_SIZE);
+      uint256 clampedAmount = bound(amount, 1, MAX_DEPOSIT_SIZE);
 
     // Get how much SXC the user has minted and how much collateral (in USD) they have deposited
-    (uint256 totalSxcMinted, uint256 collateralValueInUsd) = engine.getAccountInformation(msg.sender);
+    (uint256 totalSxcMinted, uint256 collateralValueInUsd) = engine.getAccountInformation(sender);
 
     // Calculate the maximum amount of SXC the user is allowed to mint (200% collateralization ratio)
     int256 maxSxcToMint = (int256(collateralValueInUsd) / 2) - int256(totalSxcMinted);
@@ -133,7 +151,8 @@ function minSxc(uint256 amount) public {
     }
 
     // Clamp the mint amount to not exceed what they're allowed to mint
-    amount = bound(amount, 0, uint256(maxSxcToMint));
+       clampedAmount = bound(clampedAmount, 0, uint256(maxSxcToMint));
+    if (clampedAmount == 0) return;
 
     // If the result is 0, skip the minting
     if (amount == 0) {
@@ -141,9 +160,10 @@ function minSxc(uint256 amount) public {
     }
 
     // Simulate a user calling mint on the engine
-    vm.startPrank(msg.sender);
+    vm.startPrank(sender);
     engine.minSxc(amount);
     vm.stopPrank();
+    timeMintIsCalled++;
 }
 
 
@@ -197,6 +217,11 @@ function redeemCollateral(uint256 collateralSeed, uint256 amountCollateral) publ
     vm.stopPrank();
 }
 
+
+function updateCollateralPrice(uint96 newPrice) public {
+    int256 newPriceInt = int256(uint256(newPrice));
+    ethUsdPriceFeed.updateAnswer(newPriceInt);
+}
 
 
     // ========================
